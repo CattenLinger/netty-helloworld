@@ -21,7 +21,8 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<String> {
         Channel income = ctx.channel();
         income.writeAndFlush("Welcome to HelloWorld chat server!\r\n");
         if(!channels.isEmpty())
-            channels.parallelStream().forEach(c -> c.writeAndFlush(String.format("[SERVER]: [%s] connected.\r\n", c.remoteAddress())));
+            for (Channel channel : channels)
+                channel.writeAndFlush(String.format("[SERVER]: [%s] connected.\r\n", channel.remoteAddress()));
         channels.add(income);
         System.out.printf("[%s] Client %s connected.\r\n",new Date().toString(),income.remoteAddress());
     }
@@ -29,8 +30,8 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<String> {
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
         if(!channels.isEmpty())
-            channels.parallelStream()
-                    .forEach(c -> c.writeAndFlush(String.format("[SERVER]: [%s] was disconnected.\r\n", c.remoteAddress())));
+            for (Channel channel : channels)
+                channel.writeAndFlush(String.format("[SERVER]: [%s] was disconnected.\r\n", channel.remoteAddress()));
         channels.remove(ctx.channel());
         System.out.printf("[%s] Client %s disconnected.\r\n",new Date().toString(),ctx.channel().remoteAddress());
     }
@@ -39,16 +40,16 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<String> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Channel currentChannel = ctx.channel();
         if(!channels.isEmpty())
-            channels.parallelStream()
-                    .forEach( c -> c.writeAndFlush(String.format("[SERVER]: [%s] online.\r\n", c != currentChannel ? c.remoteAddress() : "yourself")));
+            for (Channel c : channels)
+                c.writeAndFlush(String.format("[SERVER]: [%s] online.\r\n", c != currentChannel ? c.remoteAddress() : "yourself"));
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         Channel currentChannel = ctx.channel();
         if(!channels.isEmpty())
-            channels.parallelStream()
-                    .forEach( c -> c.writeAndFlush(String.format("[SERVER]: [%s] afk.\r\n", c != currentChannel ? c.remoteAddress() : "yourself")));
+            for (Channel c : channels)
+                c.writeAndFlush(String.format("[SERVER]: [%s] afk.\r\n", c != currentChannel ? c.remoteAddress() : "yourself"));
     }
 
     @Override
@@ -67,13 +68,12 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<String> {
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
         Channel currentChannel = ctx.channel();
         if(!channels.isEmpty())
-            channels.parallelStream()
-                    .forEach(c -> {
-                        boolean self = c == currentChannel;
-                        c.writeAndFlush(String.format("%s[%s]: %s\n\r",
-                                self ? "\b" : "",
-                                self ? "yourself" : c.remoteAddress(),
-                                msg));
-                    });
+            for (Channel c : channels){
+                boolean self = c == currentChannel;
+                c.writeAndFlush(String.format("%s[%s]: %s\n\r",
+                        self ? "\b" : "",
+                        self ? "yourself" : c.remoteAddress(),
+                        msg));
+            }
     }
 }

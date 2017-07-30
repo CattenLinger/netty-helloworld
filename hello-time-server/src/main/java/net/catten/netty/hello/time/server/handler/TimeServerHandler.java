@@ -4,22 +4,25 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-
-import java.util.concurrent.TimeUnit;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
 /**
  * Created by Catten Linger on 2017/7/26.
  */
-public class TimeServerHandler extends ChannelInboundHandlerAdapter{
+public class TimeServerHandler extends ChannelInboundHandlerAdapter {
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
         final ByteBuf time = ctx.alloc().buffer(8);
         time.writeLong(System.currentTimeMillis());
 
         final ChannelFuture channelFuture = ctx.writeAndFlush(time);
-        channelFuture.addListener(future -> {
-            assert future == channelFuture;
-            ctx.close();
+        channelFuture.addListener(new GenericFutureListener<Future<? super Void>>() {
+            @Override
+            public void operationComplete(Future<? super Void> future) throws Exception {
+                assert future == channelFuture;
+                ctx.close();
+            }
         });
     }
 
